@@ -2,6 +2,7 @@
   "current_interview_date_str": "",
   "enrollment_location_id": "",
   "enrollment_location_name": "",
+  "minimum_seats": "1",
   "logfile": "",
 
   "email_from": "",
@@ -23,5 +24,9 @@
   "twilio_account_sid": "",
   "twilio_auth_token": "",
   "twilio_from_number": "example: +18005551234",
-  "twilio_to_number": "example: +18005551234"
+  "twilio_to_number": "example: +18005551234",
+
+  "notify_tg": false,
+  "tg_chat_id": "example: 12345678",
+  "tg_bot": "example: bot123456789:AAE7-tgcKw89jBEFSrtk0BL5FIcY4MMOy7A"
 }

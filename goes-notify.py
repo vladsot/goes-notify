@@ -3,7 +3,6 @@
 # Note: for setting up email with sendmail, see: http://linuxconfig.org/configuring-gmail-as-sendmail-email-relay
 
 import argparse
-import commands
 import json
 import logging
 import smtplib
@@ -29,7 +28,22 @@ EMAIL_TEMPLATE = """
 <p>Your current appointment is on %s</p>
 <p>If this sounds good, please sign in to https://ttp.cbp.dhs.gov/ to reschedule.</p>
 """
-GOES_URL_FORMAT = 'https://ttp.cbp.dhs.gov/schedulerapi/slots?orderBy=soonest&limit=3&locationId={0}&minimum=1'
+GOES_URL_FORMAT = 'https://ttp.cbp.dhs.gov/schedulerapi/slots?orderBy=soonest&limit=3&locationId={0}&minimum={1}'
+
+TG_URL_FORMAT = "https://api.telegram.org/{}/sendMessage"
+TG_MESSAGE = "New GOES appoitment available on {} at \"{}\"\n\nhttps://ttp.cbp.dhs.gov/dashboard"
+
+def notify_send_tg(dates):
+    tg_chat_id = settings['tg_chat_id']
+    tg_bot = settings['tg_bot']
+    location = settings['enrollment_location_name']
+    for avail_apt in dates:
+        try:
+            tg_data = {'chat_id': tg_chat_id, 'text': TG_MESSAGE.format(avail_apt,location) }
+            r=requests.post(TG_URL_FORMAT.format(tg_bot),data = tg_data)
+            logging.info("POST request result: %s",r)
+        except Exception:
+            logging.exception("The exception has occured: ", sys.exc_info()[0])
 
 def notify_send_email(dates, current_apt, settings, use_gmail=False):
     sender = settings.get('email_from')
@@ -124,7 +138,7 @@ def notify_sms(settings, dates):
 def main(settings):
     try:
         # obtain the json from the web url
-        data = requests.get(GOES_URL_FORMAT.format(settings['enrollment_location_id'])).json()
+        data = requests.get(GOES_URL_FORMAT.format(settings['enrollment_location_id'],settings['minimum_seats'])).json()
 
     	# parse the json
         if not data:
@@ -143,7 +157,7 @@ def main(settings):
         if not dates:
             return
 
-        hash = hashlib.md5(''.join(dates) + current_apt.strftime('%B %d, %Y @ %I:%M%p')).hexdigest()
+        hash = hashlib.md5((''.join(dates) + current_apt.strftime('%B %d, %Y @ %I:%M%p')).encode('utf-8')).hexdigest()
         fn = "goes-notify_{0}.txt".format(hash)
         if settings.get('no_spamming') and os.path.exists(fn):
             return
@@ -170,6 +184,8 @@ def main(settings):
         notify_send_email(dates, current_apt, settings, use_gmail=settings.get('use_gmail'))
     if settings.get('twilio_account_sid'):
         notify_sms(settings, dates)
+    if settings.get('notify_tg'):
+        notify_send_tg(dates)
 
 def _check_settings(config):
     required_settings = (
@@ -210,7 +226,7 @@ if __name__ == '__main__':
             settings = json.load(json_file)
 
             # merge args into settings IF they're True
-            for key, val in arguments.iteritems():
+            for key, val in arguments.items():
                 if not arguments.get(key): continue
                 settings[key] = val
 
