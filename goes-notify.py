@@ -152,7 +152,8 @@ def main(settings):
                 dt = o['startTimestamp'] #2017-12-22T15:15
                 dtp = datetime.strptime(dt, '%Y-%m-%dT%H:%M')
                 if current_apt > dtp:
-                    dates.append(dtp.strftime('%A, %B %d @ %I:%M%p'))
+                    if dtp.weekday() > 4:
+                        dates.append(dtp.strftime('%A, %B %d @ %I:%M%p'))
 
         if not dates:
             return
