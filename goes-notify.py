@@ -15,7 +15,7 @@ import hashlib
 from datetime import datetime
 from os import path
 from subprocess import check_output
-from distutils.spawn import find_executable
+#from distutils.spawn import find_executable
 from email.utils import formataddr
 from email.mime.text import MIMEText
 from email.mime.image import MIMEImage
@@ -152,8 +152,12 @@ def main(settings):
                 dt = o['startTimestamp'] #2017-12-22T15:15
                 dtp = datetime.strptime(dt, '%Y-%m-%dT%H:%M')
                 if current_apt > dtp:
-                    if dtp.weekday() > 4:
+                    if int(settings['weekends_only']) > 0:
+                        if dtp.weekday() > 4:
+                            dates.append(dtp.strftime('%A, %B %d @ %I:%M%p'))
+                    else:
                         dates.append(dtp.strftime('%A, %B %d @ %I:%M%p'))
+
 
         if not dates:
             return
